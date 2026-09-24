@@ -9,34 +9,58 @@ Official repository for the Findings of EMNLP 2026 paper **"Two-Stage Reinforcem
 
 *Jiacheng Xu, Wentao Zhang, Zhiyi Lyu, Fuxiang Zhang, Chaojie Wang, Yang Liu, Bo An*
 
-> 🚧 **Code release status**: we are cleaning up the codebase and will upload it here shortly. The trained checkpoints and the processed training data are already available (see below). Watch/star this repo to get notified when the code lands.
-
-## Overview
-
-**Test Cases Scaling (TCS)** is a two-stage RL framework that teaches a code LLM to generate test cases that are both **sound** (consistent with a ground-truth solution) and **adversarial** (counterexamples targeting the solver's current failure modes):
-
-- **Stage 1 (Soundness)**: the verifier learns to generate tests that agree with the ground-truth solution, with prompts drawn from a rolling **policy-aligned buffer** of the solver's own outputs.
-- **Stage 2 (Counterexample)**: the buffer is restricted to executable-but-incorrect candidates, and the verifier is rewarded only for tests that pass the reference solution while failing the paired incorrect program.
-- **Inference-time scaling**: sample N candidate programs, generate tests conditioned on each candidate, execute everything, and select the candidate with the highest pass-count.
-
 ![TCS overview](assets/overview.png)
 
 ## Released artifacts
 
 | Artifact | Link |
 |---|---|
-| TCS-7B (fine-tuned from DeepSeek-R1-Distill-Qwen-7B) | [XiaoBanni/TCS-7B](https://huggingface.co/XiaoBanni/TCS-7B) |
-| TCS-1.5B (fine-tuned from DeepSeek-R1-Distill-Qwen-1.5B) | [XiaoBanni/TCS-1.5B](https://huggingface.co/XiaoBanni/TCS-1.5B) |
-| Processed TACO training split (6,318 verified problems) | [XiaoBanni/TACO-Train](https://huggingface.co/datasets/XiaoBanni/TACO-Train) |
+| TCS-7B | [XiaoBanni/TCS-7B](https://huggingface.co/XiaoBanni/TCS-7B) |
+| TCS-1.5B | [XiaoBanni/TCS-1.5B](https://huggingface.co/XiaoBanni/TCS-1.5B) |
+| TACO training set | [XiaoBanni/TACO-Train](https://huggingface.co/datasets/XiaoBanni/TACO-Train) |
+| LiveCodeBench evaluation set | [XiaoBanni/LiveCodeBench-2408-2502](https://huggingface.co/datasets/XiaoBanni/LiveCodeBench-2408-2502) |
 
-The checkpoints are standard causal LMs and load directly with `transformers`:
+## Installation
 
-```python
-from transformers import AutoModelForCausalLM, AutoTokenizer
-
-model = AutoModelForCausalLM.from_pretrained("XiaoBanni/TCS-7B", torch_dtype="auto", device_map="auto")
-tokenizer = AutoTokenizer.from_pretrained("XiaoBanni/TCS-7B")
+```bash
+conda create -n tcs python=3.10
+conda activate tcs
+pip install -r requirements.txt
+pip install -e .
+pip install flash-attn --no-build-isolation
+cp scripts/env.sh.template scripts/env.sh
+# Edit scripts/env.sh to set DATA_ROOT and CKPT_ROOT for your machine.
 ```
+
+## Data
+
+```bash
+source scripts/env.sh
+huggingface-cli download XiaoBanni/TACO-Train --repo-type dataset --include "*.pkl" --local-dir "$DATA_ROOT"
+huggingface-cli download XiaoBanni/LiveCodeBench-2408-2502 --repo-type dataset --include "livecodebench_2408_2502*" --local-dir "$DATA_ROOT"
+```
+
+## Training
+
+```bash
+source scripts/env.sh
+# Stage 1
+bash scripts/train/train.sh --train-type dynamic_test_case --model-path deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B
+
+# Convert the Stage-1 checkpoint (step 200 for 1.5B, step 40 for 7B)
+bash scripts/utils/convert_ckpt_to_hf.sh --base-path $CKPT_ROOT/DeepSeek-R1-Distill-Qwen-1.5B/<exp_name>/global_step_200
+
+# Stage 2
+bash scripts/train/train.sh --train-type adversarial_test_case --model-path $CKPT_ROOT/DeepSeek-R1-Distill-Qwen-1.5B/<exp_name>/global_step_200/huggingface
+```
+
+## Evaluation on LiveCodeBench
+
+```bash
+bash scripts/eval/run_lcb.sh --code-model-path XiaoBanni/TCS-7B
+```
+
+Results are written to `eval/lcb/<model>_<model>/code_output_unvalidated.txt`.
 
 ## Citation
 
@@ -52,6 +76,10 @@ tokenizer = AutoTokenizer.from_pretrained("XiaoBanni/TCS-7B")
 ## Acknowledgements
 
 Our RL training is built on [verl](https://github.com/volcengine/verl). We evaluate on [TACO](https://arxiv.org/abs/2312.14852) and [LiveCodeBench](https://livecodebench.github.io/).
+
+## License
+
+Apache License 2.0. `verl/utils/reward_score/livecodebench/lcb_runner` is adapted from [LiveCodeBench](https://github.com/LiveCodeBench/LiveCodeBench) under the MIT License.
 
 ## Contact
 
