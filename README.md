@@ -1,9 +1,10 @@
 # TCS: Two-Stage Reinforcement Learning for Sound and Adversarial Test Generation in Code LLMs
 
 [![Findings of EMNLP 2026](https://img.shields.io/badge/EMNLP%202026-Findings-blue)](https://2026.emnlp.org/)
+[![arXiv](https://img.shields.io/badge/arXiv-2609.03955-b31b1b.svg)](https://arxiv.org/abs/2609.03955v1)
+[![Homepage](https://img.shields.io/badge/Homepage-TCS-green)](https://xiaobanni.github.io/projects/tcs/)
 [![Model](https://img.shields.io/badge/%F0%9F%A4%97%20HF-TCS--7B-yellow)](https://huggingface.co/XiaoBanni/TCS-7B)
 [![Model](https://img.shields.io/badge/%F0%9F%A4%97%20HF-TCS--1.5B-yellow)](https://huggingface.co/XiaoBanni/TCS-1.5B)
-[![Dataset](https://img.shields.io/badge/%F0%9F%A4%97%20HF-TACO--Train-orange)](https://huggingface.co/datasets/XiaoBanni/TACO-Train)
 
 Official repository for the Findings of EMNLP 2026 paper **"Two-Stage Reinforcement Learning for Sound and Adversarial Test Generation in Code LLMs"**.
 
